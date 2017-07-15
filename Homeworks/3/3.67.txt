@@ -1,0 +1,48 @@
+3.67
+Jonathan Chu
+004832220
+
+A.
+address    value   registers pointing to it 
+rsp        x        
+rsp + 8    y
+rsp + 16   &z
+rsp + 24   z       rax
+...
+rsp + 64           rdi   
+...
+rsp + 104
+
+B. In %rdi, eval passes x, the first element of s.
+
+C. Process utilizes the stack pointer to access elements of struct s
+with 8(%rsp), 16(%rsp), and 24(%rsp), which hold s.p, s.a[0], and s.a[1], 
+respectively. These values were loaded into the stack by eval prior to 
+calling process.
+
+D. Elements of r are accessed using %rdi, which is set to point to the 
+beginning of r. The elements of s are copied into r at the correct 
+locations by moving the values into addresses at and following %rdi.
+
+E.
+address    value   registers pointing to it 
+rsp        x        
+rsp + 8    y
+rsp + 16   &z
+rsp + 24   z       rax
+...
+rsp + 64   y       rdi
+rsp + 72   x       
+rsp + 80   z
+...
+rsp + 104
+
+eval accesses elements of structure r following the return from process 
+with 72(%rsp), 64(%rsp), and 80(%rsp).
+
+F. Structure values are passed as arguments to an inner function by 
+pushing all elements onto the stack at a higher address than the 
+memory used by the outer function so far. The outer function can 
+then access the elements of the struct instance return value of the 
+inner function simply by accessing the portions of the stack onto 
+which they were pushed by the inner function.

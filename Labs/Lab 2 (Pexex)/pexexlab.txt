@@ -1,0 +1,55 @@
+gdb ~eggert/bin64/bin/emacs-25.2
+to run GDB with emacs
+
+(gdb) break Ftimes
+set a breakpoint at function Ftimes
+
+(gdb) r -Q -batch -eval '(print (* 1250284240 -1844255039))'
+to run the procedure on emacs that was intended for the lab
+
+(gdb) set disassemble-next-line on
+so that GDB tells me the machine addresses at which commands reside
+
+(gdb) si
+to execute current instruction and move on to the next one, stepping 
+into any function(s) encountered
+
+(gdb) info registers
+to see the values in registers and how machine instructions change them
+
+(gdb) x [address] 
+to see the contents at a particular address, particularly useful for 
+viewing values pointed to by rsp
+
+(gdb) r
+to start over when I accidentally step too far or use the wrong step 
+command
+
+
+
+Process:
+1. copy the current address in hex, the bytes of the machine instruction, 
+and the instruction in assembly to trace.tr
+2. si
+3. info registers, if I need to check a value tha was changed
+4. x [address], if I need to check a value on the stack or at some other
+address
+5. write the effect of the previous instruction in trace.tr, if applicable
+6. repeat steps 1-5
+
+
+
+Difficulties:
+1. In the beginning, after running "gdb ~eggert/bin64/bin/emacs-25.2" I 
+would just say "run" not realizing I was supposed to run a specific emacs
+process.
+
+2. At first, I didn't know how to see the bytes of the machine instruction
+until I went back to the spec and saw that the necessray command was given
+to us
+
+3. When I started tracing, I was getting the wrong register values changed
+because I was looking at the register values before the instructions that
+I thought were being executed were actually being executed. For example I 
+got rip values equal to the address of the current instruction which was 
+obviously wrong.

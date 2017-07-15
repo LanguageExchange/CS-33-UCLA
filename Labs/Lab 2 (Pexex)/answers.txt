@@ -1,0 +1,33 @@
+1. The instruction
+lea    0x2(,%rbp,4),%rax
+causes overflow. Elisp stores 64-bit numbers in a way that only allows the lower 
+62 bits to be accessed, while the upper 2 bits are not accessible. Elisp left 
+shifts then right shifts 64-bit integers by 2; this lea instruction effectively
+shifts left by 2. However, when a number overflows due to such a left shift, 
+information is lost and causes the program to produce an incorrect result.
+
+2. most-negative-fixnum is defined as -1  - (most-positive-fixnum), and 
+most-positive-fixnum is set at 0x7ffffffffffffffff >> 2 = 0x1fffffffffffffff
+because of Elisp's 62-bit integer storage. 
+-1 - 0x1fffffffffffffff is the same as ~(0001 1111 .... 1111), which produces
+1110 0000 .... 0000, or 0xe000000000000000, which is equivalent to the output, 
+-2305843009213693952.
+
+3. most-positive-fixnum is equal to 0x1fffffffffffffff (2305843009213693951), 
+which when raised to the power of four, yields a number whose lowest 64 
+bits are 8000 0000 0000 0001 (found using an online calculator). Elisp 
+then shifts this number left by two then right by two, effectively throwing 
+away the leading 1 bit and just yielding 0000 0000 0000 0001, equal to 1.
+
+4. With -fwrapv, the program will not yield the correct result in calculations
+whose results overflow because instead of taking the lower order 64 bits of 
+the correct result, it would generate an incorrect result due to wrapping.
+
+5. As one could see in the assembly code, the instruction pointer enters a loop just 
+before the program crashes. In the loop, the machine moves the values xmm7, xmm6, 
+xmm5, and xmm4 into the memory locations below %rdi by 0x10, 0x20, 0x30, and 0x40, 
+respectively. %rdi is incremented by 0x40 in each iteration of the loop. %rdi eventually
+points to memory beyond the stack, above %rbp, which causes a segmentation 
+fault because the program attempts to access memory it shouldn't when the program 
+tries to move the value in xmm7 to -0x10(%rdi) in this line of assembly:
+0x00007ffff173949b <__strcpy_sse2_unaligned+411>:> f3 0f 7f 7f f0> movdqu %xmm7,-0x10(%rdi)

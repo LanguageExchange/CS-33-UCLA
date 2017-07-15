@@ -1,0 +1,31 @@
+A. Yes
+Double has 52 bits to represent the fraction portion, while int has only 32 bits total,
+so dx will be able to precisely represent x. Therefore, when casted to float, dx and x, 
+if rounded, will round the same way.
+
+B. No
+Double has more precision than int. If 
+x == INT_MAX and y == INT_MIN,
+x-y will overflow, while dx - dy will not, making the overall expression evaluate to false.
+Assuming fwrapv, x-y would overflow to a negative number, while dx - dy is correct, 
+positive result.
+
+This answer does not explicitly require fwrapv since an overflow without fwrapv would still
+yield a different result than a result that did not overflow, but with fwrapv, it becomes
+more immediately obvious that this expression is not always true.
+
+C. Yes
+Because dx, dy, and dz are casted from ints, there is no way that their sum could overflow,
+since the capacity of a 64-bit double far exceeds the capacity of an 32-bit int. Therefore,
+it doesn't matter whether there is fwrapv because there is no chance of overflow anyway.
+
+D. No
+The result of multiplication could be greater than is representable precisely by a double, 
+which would cause the value to be rounded to a representable value. Depending on what the
+values of dx, dy, and dz are, multiplying in different orders could affect rounding and
+make the LHS not equal to the RHS. An example of a case where this statement is false 
+would involve large multipliers that would cause overflow when multiplied, say 2^30.
+
+E. No
+Suppose dx == 0 and dz == 1.  dx / dx would evaluate to Nan because of division by zero 
+while dz / dz would evaluate to 1. 

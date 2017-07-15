@@ -1,0 +1,138 @@
+-O2:
+Looking at the isntructions under the .LFB0 label, one can see that the testovf function simply 
+just returns 0 in all cases when compiled with just -O2. This occurs because gcc recognizes 
+that n + (some positive value) must always be greater than n, making the return statement always
+yield false, or zero. The high optimization with the -O2 flag then condenses this into just 
+a xor instruction to set the return value to zero and then a return instruction.
+
+-O2 -fwrapv:
+The machine code now has more instructions and actually performs the operations specified in the
+source code. There is an add instruction and then a comparison to test whether the sum was less 
+than the original value. These extra instructions are generated because now that integer addition
+wraps around, the machine code must actually perform the addition and allow it to wrap around if 
+it must rather than just return zero as above.
+
+-O2 -fsanitize=undefined:
+There are now many more instructions and the use of multiple labels that the machine code jumps 
+to. The parameter in %rdi is moved to both %rbp and %rbx, and 9223372036854775807 is added to
+%rbp. In the case of overflow, a separate function called __ubsan_handle_add_overflow is called to
+handle the addition result. If there is no overflow, the code proceeds to the .L2 label to 
+perform a comparison, set the return value, and reset the stack before returning. If there was 
+overflow, the code jumps to .L2 after calling  __ubsan_handle_add_overflow.
+
+This more complicated process and use of an external function occurs when the program is compiled
+with -fsanitize=undefined because this flag enables the undefined behavior detector. UBSan stands 
+for undefined behavior sanitizer, and the machine code calls __ubsan_handle_add_overflow to 
+handle the case where addition overflows.
+
+
+
+Assembly code for each compilation is below.
+
+ /////////////////////// -O2 ////////////////////////////// 
+
+ .file   "testovf.c"
+        .text
+        .p2align 4,,15
+        .globl  testovf
+        .type   testovf, @function
+testovf:
+.LFB0:
+        .cfi_startproc
+        xorl    %eax, %eax
+        ret
+        .cfi_endproc
+.LFE0:
+        .size   testovf, .-testovf
+        .section        .text.startup,"ax",@progbits
+        .p2align 4,,15
+        .globl  main
+        .type   main, @function
+main:
+.LFB1:
+        .cfi_startproc
+        rep ret
+        .cfi_endproc
+.LFE1:
+        .size   main, .-main
+        .ident  "GCC: (GNU) 6.3.0"
+        .section        .note.GNU-stack,"",@progbits
+
+
+//////////////// -O2 -fwrapv //////////////////
+
+ .file   "testovf.c"
+        .text
+        .p2align 4,,15
+        .globl  testovf
+        .type   testovf, @function
+testovf:
+.LFB0:
+        .cfi_startproc
+        movabsq $9223372036854775807, %rax
+        addq    %rdi, %rax
+        cmpq    %rdi, %rax
+        setl    %al
+        ret
+        .cfi_endproc
+.LFE0:
+        .size   testovf, .-testovf
+        .section        .text.startup,"ax",@progbits
+        .p2align 4,,15
+        .globl  main
+        .type   main, @function
+main:
+.LFB1:
+        .cfi_startproc
+        rep ret
+        .cfi_endproc
+.LFE1:
+        .size   main, .-main
+        .ident  "GCC: (GNU) 4.8.5 20150623 (Red Hat 4.8.5-11)"
+        .section        .note.GNU-stack,"",@progbits
+
+
+
+
+/////////////// -O2 -fsanitize=undefined //////////////////
+
+.file   "testovf.c"
+        .text
+        .p2align 4,,15
+        .globl  testovf
+        .type   testovf, @function
+testovf:
+.LFB0:
+        .cfi_startproc
+        pushq   %rbp
+        .cfi_def_cfa_offset 16
+        .cfi_offset 6, -16
+        pushq   %rbx
+        .cfi_def_cfa_offset 24
+        .cfi_offset 3, -24
+        movabsq $9223372036854775807, %rdx
+        movq    %rdi, %rbp
+        movq    %rdi, %rbx
+        subq    $8, %rsp
+        .cfi_def_cfa_offset 32
+        addq    %rdx, %rbp
+        jo      .L6
+.L2:
+        cmpq    %rbp, %rbx
+        setg    %al
+        addq    $8, %rsp
+        .cfi_remember_state
+        .cfi_def_cfa_offset 24
+        popq    %rbx
+        .cfi_def_cfa_offset 16
+        popq    %rbp
+        .cfi_def_cfa_offset 8
+        ret
+.L6:
+        .cfi_restore_state
+        movq    %rdi, %rsi
+        movl    $.Lubsan_data0, %edi
+        call    __ubsan_handle_add_overflow
+        jmp     .L2
+        .cfi_endproc
+.LFE0:

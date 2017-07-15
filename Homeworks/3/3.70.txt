@@ -1,0 +1,10 @@
+3.70
+A. 
+0
+8
+0
+8
+
+B. 16 bytes total
+
+C. up->x = *(up->e2.next->e1.p) - up->e2.next.e1.y;

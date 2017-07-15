@@ -1,0 +1,78 @@
+after unzipping the tar,
+$ make seq
+$ ./seq
+FUNC TIME : 0.746067
+TOTAL TIME : 2.576825
+
+$ make seq GPROF=1
+$ ./seq
+FUNC TIME : 0.834639
+TOTAL TIME : 2.742820
+
+$ gprof seq | less
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total
+ time   seconds   seconds    calls  ms/call  ms/call  name
+ 72.39      0.60     0.60       15    40.05    41.83  func1
+ 16.89      0.74     0.14  5177344     0.00     0.00  rand2
+  3.62      0.77     0.03       15     2.00     3.34  func5
+  2.41      0.79     0.02   491520     0.00     0.00  findIndexBin
+  1.21      0.80     0.01        2     5.01     5.01  init
+  1.21      0.81     0.01        1    10.01   123.58  addSeed
+  1.21      0.82     0.01        1    10.01    10.01  imdilateDisk
+  1.21      0.83     0.01                             sequence
+  0.00      0.83     0.00   983042     0.00     0.00  round
+  0.00      0.83     0.00       16     0.00     0.00  dilateMatrix
+  0.00      0.83     0.00       15     0.00     0.00  func2
+  0.00      0.83     0.00       15     0.00     0.00  func3
+  0.00      0.83     0.00       15     0.00     0.00  func4
+  0.00      0.83     0.00       15     0.00     0.00  rand1
+  0.00      0.83     0.00        2     0.00     0.00  get_time
+  0.00      0.83     0.00        1     0.00     0.00  elapsed_time
+  0.00      0.83     0.00        1     0.00     0.00  fillMatrix
+  0.00      0.83     0.00        1     0.00     0.00  func0
+
+func1 is clearly taking the great majority of the time, so we want to 
+target this function when attempting to make the program run faster.
+
+We can modify func1 in func.c to make the program run faster, but we
+could change multiple functions to make it further more efficient.
+
+I added pragma omp statements before for loops in several functions, 
+using firstprivate(var1, var2...) and private(var1, ...) to ensure 
+values were initialized correctly and that counters were private to
+each thread using them.
+
+$ make omp
+$ ./omp
+FUNC TIME : 0.067134
+TOTAL TIME : 1.911559
+
+0.067 < 0.746, so it's clear that the program runs faster after the
+changes implemented in func.c.
+
+To compute the speedup:
+0.746/0.067
+= 11.1
+
+To check correctness:
+$ make check
+gcc -o omp  -O3 -fopenmp filter.c main.c func.c util.c -lm
+cp omp filter
+./filter
+FUNC TIME : 0.075324
+TOTAL TIME : 1.921308
+diff --brief correct.txt output.txt
+
+No output, so files match.
+
+At this point, there are more small modifications that could be made
+to the code, but the speedup achieved is already pretty significant,
+so I will leave it at that.
+
+Lastly, to check this text file fits the guidelines,
+$expand func.c openmplab.txt |
+  awk '/\r/ || 200 < length'
+outputs nothing.

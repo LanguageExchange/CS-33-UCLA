@@ -1,0 +1,24 @@
+Jonathan Chu
+004832220
+CS 33 HW5
+TA: Shikhar Malhotra
+
+
+12.18)
+A. unsafe
+B. safe
+C. unsafe
+
+12.24)
+We cannot conclude that the RIO functionsi are explicitly reentrant because they take
+pointers as arguments, and we cannot verify without analyzing the function calls
+that these pointers do not point to shared variables that could be incorrectly
+modified by different threads.
+
+With that said, these functions are implicitly reentrant in that there are no local
+shared variables that we can immediately see, but there could be shared variables
+pointed to by arguments passed as pointers. It would then be up to the user of these
+functions to ensure that shared variables are not passed through the pointer arguments
+and that the functions are indeed reentrant when necessary.
+
+

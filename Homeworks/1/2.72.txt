@@ -1,0 +1,5 @@
+2.72
+A) Because sizeof(val) returns a value of type size_t, an unsigned type, the operation maxbytes-sizeof(val) will undergo unsigned arithmetic, meaning that it will always return an unsigned (positive) number and that the condition will therefore always evaluate to true. 
+
+B) To prevent unsigned arithmetic, we can cast the value of type size_t to a signed type.
+if (maxbytes - (int) sizeof(val) >= 0)
